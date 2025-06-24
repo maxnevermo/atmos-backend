@@ -38,10 +38,12 @@ export const getWeatherByCity = async (req, res) => {
     );
     const uvIndex = uvRes.data.current.uv;
 
+    const currentHoursCount = new Date().getHours();
+
     const hourlyRes = await axios.get(
-      `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(
-        city
-      )}&units=metric&cnt=6&appid=${OPEN_WEATHER_API_KEY}`
+      `https://pro.openweathermap.org/data/2.5/forecast/hourly?lat=${lat}&lon=${lon}&appid=${OPEN_WEATHER_API_KEY}&cnt=${
+        23 - currentHoursCount
+      }&units=metric`
     );
 
     const hourlyData = hourlyRes.data.list.map((entry) => {
@@ -49,22 +51,31 @@ export const getWeatherByCity = async (req, res) => {
       const time = date
         .toLocaleTimeString([], { hour: "numeric", hour12: true })
         .toLowerCase();
+
       return {
         time,
         temp: Math.round(entry.main.temp),
+        humidity: entry.main.humidity,
+        wind: entry.wind.speed,
+        precipitation: entry.pop ?? 0,
         condition: entry.weather[0].main.toLowerCase(),
       };
     });
+
+    console.log(hourlyData);
 
     const pollutionRes = await axios.get(
       `http://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${OPEN_WEATHER_API_KEY}`
     );
 
     const aqiRes = await axios.get(
-      `http://api.airvisual.com/v2/nearest_city??lat=${lat}&lon=${lon}}&key=${IQAIR_API_KEY}`
+      `http://api.airvisual.com/v2/nearest_city?lat=${lat}&lon=${lon}&key=${IQAIR_API_KEY}`
     );
 
     const airData = pollutionRes.data.list[0];
+
+    console.log(aqiRes.data);
+    console.log(aqiRes.data.data.current.pollution);
 
     const localTime = new Date(
       Date.now() + current.timezone * 1000
@@ -85,7 +96,7 @@ export const getWeatherByCity = async (req, res) => {
       uv_index: uvIndex,
       forecast_next_hours: hourlyData,
       air_quality: {
-        aqi: aqiRes.data,
+        aqi: aqiRes.data.data.current.pollution.aqius,
         components: airData.components,
       },
     });
