@@ -77,6 +77,12 @@ export const getWeatherByCity = async (req, res) => {
     console.log(aqiRes.data);
     console.log(aqiRes.data.data.current.pollution);
 
+    const weatherapiForecastRes = await axios.get(
+      `http://api.weatherapi.com/v1/forecast.json?key=${WEATHER_API_KEY}&q=${lat},${lon}&days=1&alerts=yes`
+    );
+
+    const alerts = weatherapiForecastRes.data.alerts?.alert ?? [];
+
     const localTime = new Date(
       Date.now() + current.timezone * 1000
     ).toLocaleTimeString([], {
@@ -99,6 +105,7 @@ export const getWeatherByCity = async (req, res) => {
         aqi: aqiRes.data.data.current.pollution.aqius,
         components: airData.components,
       },
+      alerts,
     });
   } catch (err) {
     console.error("Weather error:", err?.response?.data || err.message);
